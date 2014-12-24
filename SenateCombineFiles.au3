@@ -242,7 +242,8 @@ Func fuCreateXML2LOCstring($asInputFiles = 0)
 		Else
 			$tLocedFiles.Add($asInputFiles[$iRow][0], _PathMake($sDrive, $sDir, $sFilename, $sExtension))
 		EndIf
-		ProgressSet((33 / $iFileCount) * ($iRow + 1))
+		$iProgress += (33 / $iFileCount)
+		ProgressSet($iProgress)
 	Next
 	fuXML2LOC(StringStripWS($sXMLfileString, $STR_STRIPTRAILING))
 	Return $tLocedFiles
@@ -268,8 +269,8 @@ Func fuDoWok($tLocFiles = 0)
 		If $sExtension = ".loc" Then
 			$sDoWokString &= StringLower($tLocFiles($sBlrbKey)) & @TAB
 		EndIf
-		$iKeyCount += 1
-		ProgressSet(33 + (33 / $tLocFiles.Count) * ($iKeyCount + 1))
+		$iProgress += (33 / $tLocFiles.Count)
+		ProgressSet($iProgress)
 	Next
 ;~ 	StringStripWS($sDoWokString, BitOR($STR_STRIPLEADING, $STR_STRIPTRAILING))
 	$sDoWokString = StringTrimRight($sDoWokString, 1)
@@ -385,8 +386,8 @@ Func fuCombineFiles($tFileList = 0, $sExtensionNumber = '')
 		If $hFileOpen < 0 Then Return MsgBox($MB_ICONERROR, 'Error', 'Could Not Open ' & $tFileList($sBlrbKey) & ' File!!!')
 		$sComboText &= FileRead($hFileOpen)
 		FileClose($hFileOpen)
-		$iKeyCount += 1
-		ProgressSet(66 + (33 / $tFileList.Count) * ($iKeyCount + 1))
+		$iProgress += (33 / $tFileList.Keys)
+		ProgressSet($iProgress)
 	Next
 	$sComboText = StringRegExpReplace($sComboText, "(?sm)(S7781.*?S0634)", "") ; Remove text between two bell codes
 	$sComboText = StringRegExpReplace($sComboText, "(?sm)(S0634\s*S0634)", "S0634") ; Remove double S0634 bell code
@@ -399,6 +400,7 @@ Func fuCombineFiles($tFileList = 0, $sExtensionNumber = '')
 ;~ 	MsgBox(0, "Textpad String", $sTextPad)
 	Run($sTextPad & " " & $sOutputFile, @WindowsDir, @SW_SHOWDEFAULT)
 	ProgressSet(100, "Done!")
+	$iProgress = 0
 	Sleep(750)
 	ProgressOff()
 	Return
