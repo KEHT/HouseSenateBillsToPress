@@ -1,5 +1,6 @@
 ;~ 12/23/2014 - sjohnson@gpo.gov - Alpha version (0.90) SenateCombineFiles to process blurbs & amendments
 ;~ 12/24/2014 - sjohnson@gpo.gov - Alpha version (0.901) Added Progress Bar
+;~ 01/22/2015 - sjohnson@gpo.gov - Release version (1.0) Fixed directory locations and defaults.  Fixed added empty files
 #include <file.au3>
 #include <Array.au3>
 #include <GUIConstantsEx.au3>
@@ -14,13 +15,11 @@
 
 Opt("GUIOnEventMode", 1)
 
-;~ Dim $yorno = 7
-;~ Dim $szDrive, $szDir, $szFName, $szExt, $aFile, $sInputFileName, $sInputFile, $sInputFileText
 Global $iProgress = 0
 
 Global $sXMLinputFolderDefault = "\\alpha3\E\SOLCBILL" ; "\\alpha3\E\RiosBay\Text of Amendments\1_SOLCBILL_Run XML2LOC" ;
-Global $sTXTinputFolderDefault = "\\alpha3\E\RECSCAN" ; "\\alpha3\E\RiosBay\Text of Amendments\3_RECSCAN";
-Global $sXML2LOCexecDefault = @ScriptDir & "\ManyXML2Loc.exe"
+Global $sTXTinputFolderDefault = "\\alpha3\E\RECSCAN"; "\\alpha3\E\RiosBay\Text of Amendments\3_RECSCAN";
+Global $sXML2LOCexecDefault = "C:\GPO\XML2Loc\ManyXML2Loc.exe"
 Global $sDoWokexecDefault = "\\alpha3\NETAPPS\APPS\DoWok.exe" ; "\\alpha3\E\DAVE\DoWok.exe" ;
 Global $sSluglineFileDefault = "\\alpha3\E\CR\NSET\slugline"
 Global $sOutputDirDefault = "\\alpha3\E\CR\NSET" ; "\\alpha3\E\RiosBay\Text of Amendments\4_CR_NSET" ;
@@ -35,15 +34,13 @@ fuMainGUI()
 
 ; create GUI and tabs
 Func fuMainGUI()
-	$hMainGUI = GUICreate("Senate " & ChrW(8212) & " Combine Files v0.9.0.1", 600, 500)
+	$hMainGUI = GUICreate("Senate " & ChrW(8212) & " Combine Files v1.0", 600, 500)
 	GUISetOnEvent($GUI_EVENT_CLOSE, "On_Close") ; Run this function when the main GUI [X] is clicked
 
 	$tab = GUICtrlCreateTab(5, 5, 590, 490)
 
 	; tab 0
 	$tab0 = GUICtrlCreateTabItem("Main")
-
-;~ 	$LocalDate = _DateAdd('d', -1, _NowCalcDate())
 
 	$Date = GUICtrlCreateMonthCal(_NowCalcDate(), 340, 50, 220, 140, $MCS_NOTODAY)
 	GUICtrlSetOnEvent(-1, "On_Click") ; Call a common button function
@@ -82,13 +79,13 @@ Func fuMainGUI()
 
 	GUICtrlCreateLabel("Default Blurb Directory", 35, 45)
 	$hBlurbFolder = GUICtrlCreateInput("", 35, 65, 320, 20)
-	$sXMLinputFolder = fuGetRegValsForSettings("blurb", $sXMLinputFolderDefault)
-	GUICtrlSetData($hBlurbFolder, $sXMLinputFolder)
+	$sTXTinputFolder = fuGetRegValsForSettings("blurb", $sTXTinputFolderDefault)
+	GUICtrlSetData($hBlurbFolder, $sTXTinputFolder)
 
 	GUICtrlCreateLabel("Default Amendment Directory", 35, 100)
 	$hAmendFolder = GUICtrlCreateInput("", 35, 120, 320, 20)
-	$sTXTinputFolder = fuGetRegValsForSettings("amend", $sTXTinputFolderDefault)
-	GUICtrlSetData($hAmendFolder, $sTXTinputFolder)
+	$sXMLinputFolder = fuGetRegValsForSettings("amend", $sXMLinputFolderDefault)
+	GUICtrlSetData($hAmendFolder, $sXMLinputFolder)
 
 	GUICtrlCreateLabel("Default Path to XML2LOC", 35, 155)
 	$hXML2LOCpath = GUICtrlCreateInput("", 35, 175, 320, 20)
@@ -148,7 +145,7 @@ EndFunc   ;==>On_Close
 Func HotKeyPressed()
 	Switch @HotKeyPressed ; The last hotkey pressed
 		Case "{ENTER}" ; String is the {ENTER} hotkey
-			If _GuiCtrlGetFocus($hMainGUI) = $hAmendmentFileNameFieldGUI Then
+			If _GuiCtrlGetFocus($hMainGUI) = $hAmendmentFileNameFieldGUI And GUICtrlRead($hBlurbFileNameFieldGUI) <> "" And GUICtrlRead($hAmendmentFileNameFieldGUI) <> "" Then
 				fuPostFiles($hBlurbAmendmentList, GUICtrlRead($hBlurbFileNameFieldGUI), GUICtrlRead($hAmendmentFileNameFieldGUI))
 				GUICtrlSetData($hBlurbFileNameFieldGUI, "")
 				GUICtrlSetData($hAmendmentFileNameFieldGUI, "")
@@ -177,12 +174,14 @@ Func On_Click()
 				GUICtrlSetData($DateSelected, "Date Selected: " & GUICtrlRead($Date))
 			EndIf
 		Case $hAddButtonGUI
-			fuPostFiles($hBlurbAmendmentList, GUICtrlRead($hBlurbFileNameFieldGUI), GUICtrlRead($hAmendmentFileNameFieldGUI))
-			GUICtrlSetData($hBlurbFileNameFieldGUI, "")
-			GUICtrlSetData($hAmendmentFileNameFieldGUI, "")
-			GUICtrlSetState($hBlurbFileNameFieldGUI, $GUI_FOCUS)
+			If GUICtrlRead($hBlurbFileNameFieldGUI) <> "" And GUICtrlRead($hAmendmentFileNameFieldGUI) <> "" Then
+				fuPostFiles($hBlurbAmendmentList, GUICtrlRead($hBlurbFileNameFieldGUI), GUICtrlRead($hAmendmentFileNameFieldGUI))
+				GUICtrlSetData($hBlurbFileNameFieldGUI, "")
+				GUICtrlSetData($hAmendmentFileNameFieldGUI, "")
+				GUICtrlSetState($hBlurbFileNameFieldGUI, $GUI_FOCUS)
+			EndIf
 		Case $hCombineButtonGUI
-			ProgressOn("Task Progress", "Processing Blurbs && Amendments", "Combining...", Default, Default, $DLG_NOTITLE)
+			ProgressOn("Task Progress", "Processing Blurbs && Amendments", "Combining...", Default, Default, $DLG_NOTONTOP)
 			Local $iExtensionNumber = Int(GUICtrlRead($hExtensionNumberFieldGUI))
 			If $iExtensionNumber < 1 Then Return MsgBox($MB_ICONERROR, 'Error', 'Extension Number is not between 001 and 999 !!!')
 			Local $sExtensionNumber = StringFormat("%03i", $iExtensionNumber)
@@ -193,10 +192,10 @@ Func On_Click()
 			fuDoWok($tLocedFiles)
 			fuCombineFiles($tLocedFiles, $sExtensionNumber)
 		Case $hDefault_Button
-			$sXMLinputFolder = $sXMLinputFolderDefault
-			GUICtrlSetData($hBlurbFolder, $sXMLinputFolder)
 			$sTXTinputFolder = $sTXTinputFolderDefault
-			GUICtrlSetData($hAmendFolder, $sTXTinputFolder)
+			GUICtrlSetData($hBlurbFolder, $sTXTinputFolder)
+			$sXMLinputFolder = $sXMLinputFolderDefault
+			GUICtrlSetData($hAmendFolder, $sXMLinputFolder)
 			$sXML2LOCexec = $sXML2LOCexecDefault
 			GUICtrlSetData($hXML2LOCpath, $sXML2LOCexec)
 			$sDoWokexec = $sDoWokexecDefault
@@ -320,7 +319,7 @@ Func fuGetRegValsForSettings($sFolder, $DefaultFolder)
 EndFunc   ;==>fuGetRegValsForSettings
 
 Func fuApplySettingsValue($hGUI, $sFolder)
-	$cInputVal = GUICtrlRead($hGUI)
+	Local $cInputVal = GUICtrlRead($hGUI)
 	$cInputVal = StringRegExpReplace($cInputVal, '\\* *$', '') ; strip trailing \ and spaces
 	If Not FileExists($cInputVal) Then
 		MsgBox(16, "Location invalid", $sFolder & " location does not exists. Enter a valid path to it.")
