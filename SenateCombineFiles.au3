@@ -181,7 +181,7 @@ Func On_Click()
 				GUICtrlSetState($hBlurbFileNameFieldGUI, $GUI_FOCUS)
 			EndIf
 		Case $hCombineButtonGUI
-			ProgressOn("Task Progress", "Processing Blurbs && Amendments", "Combining...", Default, Default, $DLG_NOTONTOP)
+			ProgressOn("Task Progress", "Processing Blurbs && Amendments", "Combining...", Default, 150, $DLG_NOTITLE)
 			Local $iExtensionNumber = Int(GUICtrlRead($hExtensionNumberFieldGUI))
 			If $iExtensionNumber < 1 Then Return MsgBox($MB_ICONERROR, 'Error', 'Extension Number is not between 001 and 999 !!!')
 			Local $sExtensionNumber = StringFormat("%03i", $iExtensionNumber)
@@ -350,7 +350,7 @@ Func fuPostFiles($hGUI, $sBlurb = "", $sAmend = "")
 		$sDir = $sXMLinputFolder
 	EndIf
 	If $sExtension = "" Then
-		$sExtension = ".loc"
+		$sExtension = ".xml"
 	EndIf
 	$sAmend = _PathMake($sDrive, $sDir, $sFilename, $sExtension)
 
